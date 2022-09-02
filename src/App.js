@@ -2,20 +2,43 @@ import {Component} from 'react'
 import {v4 as uuidv4} from 'uuid'
 import './App.css'
 
+const bgColorList = [
+  'yellow',
+  'green',
+  'orange',
+  'light-green',
+  'red',
+  'sky-blue',
+  'grey',
+  'dark-blue',
+]
+
 const EachPasswordData = props => {
-  const {eachPassword} = props
-  const {website, username, password} = eachPassword
+  const {eachPassword, onDeleteData} = props
+  const {website, username, password, id, index} = eachPassword
+
+  const color = bgColorList[index]
+
+  const onClickDelete = () => {
+    onDeleteData(id)
+  }
+
   return (
     <li className="each-password">
       <div className="fill-data">
-        <p className="profile">{website[0]}</p>
-        <div>
+        <p className={`profile ${color}`}>{website[0].toUpperCase()}</p>
+        <div className="user-data">
           <p className="data">{website}</p>
           <p className="data">{username}</p>
           <p className="data">{password}</p>
         </div>
       </div>
-      <button type="button" className="delete-button">
+      <button
+        type="button"
+        className="delete-button"
+        onClick={onClickDelete}
+        testid="delete"
+      >
         <img
           src="https://assets.ccbp.in/frontend/react-js/password-manager-delete-img.png"
           alt="delete"
@@ -27,7 +50,14 @@ const EachPasswordData = props => {
 }
 
 class App extends Component {
-  state = {passwordsList: [], website: '', username: '', password: ''}
+  state = {
+    passwordsList: [],
+    website: '',
+    username: '',
+    password: '',
+    search: '',
+    checkStatus: false,
+  }
 
   onChangeWebsite = event => {
     this.setState({website: event.target.value})
@@ -41,14 +71,25 @@ class App extends Component {
     this.setState({password: event.target.value})
   }
 
+  onChangeSearchPasswords = event => {
+    const {passwordsList} = this.state
+    this.setState({search: event.target.value})
+    const filterData = passwordsList.filter(eachPass =>
+      eachPass.website.toLowerCase().includes(event.target.value.toLowerCase()),
+    )
+    this.setState({passwordsList: filterData})
+  }
+
   addPasswordData = event => {
     event.preventDefault()
     const {website, username, password} = this.state
+    const number = Math.ceil(Math.random() * 7)
     const newPassword = {
       id: uuidv4(),
       website,
       username,
       password,
+      index: number,
     }
     this.setState(prevState => ({
       passwordsList: [...prevState.passwordsList, newPassword],
@@ -92,7 +133,7 @@ class App extends Component {
 
             <input
               type="text"
-              placeholder="Username"
+              placeholder="Enter Username"
               className="input"
               onChange={this.onChangeUsername}
               value={username}
@@ -108,7 +149,7 @@ class App extends Component {
             <input
               type="password"
               className="input"
-              placeholder="Password"
+              placeholder="Enter Password"
               onChange={this.onChangePassword}
               value={password}
             />
@@ -128,35 +169,53 @@ class App extends Component {
 
   displayAllPasswords = () => {
     const {passwordsList} = this.state
+
     return (
       <ul className="all-passwords-data">
         {passwordsList.map(eachPassword => (
-          <EachPasswordData eachPassword={eachPassword} key={eachPassword.id} />
+          <EachPasswordData
+            eachPassword={eachPassword}
+            key={eachPassword.id}
+            onDeleteData={this.onDeleteData}
+          />
         ))}
       </ul>
     )
   }
 
   noPasswordsMessage = () => {
-    const {passwordsList} = this.state
+    const Show = 'No Passwords'
     return (
-      <img
-        src="https://assets.ccbp.in/frontend/react-js/no-passwords-img.png"
-        alt="no passwords"
-        className="no-password-image"
-      />
+      <div className="empty">
+        <img
+          src="https://assets.ccbp.in/frontend/react-js/no-passwords-img.png"
+          alt="no passwords"
+          className="no-password-image"
+        />
+        <p className="password-heading">{Show}</p>
+      </div>
     )
   }
 
-  onSavesPassword = () => {
+  onDeleteData = id => {
     const {passwordsList} = this.state
+    const filterList = passwordsList.filter(eachData => eachData.id !== id)
+    this.setState({passwordsList: filterList})
+  }
+
+  onClickCheckBox = () => {
+    this.setState(prevState => ({checkStatus: !prevState.checkStatus}))
+  }
+
+  onSavesPassword = () => {
+    const {passwordsList, search} = this.state
 
     return (
       <div className="password-container">
         <div className="search-container">
           <div className="password-count">
             <h1 className="password-heading">Your Passwords</h1>
-            <p className="count">0</p>
+            <p className="count">{passwordsList.length}</p>
           </div>
           <div className="search-input-container">
             <img
@@ -169,11 +228,18 @@ class App extends Component {
               type="search"
               placeholder="Search"
               className="search-input"
+              onChange={this.onChangeSearchPasswords}
+              value={search}
             />
           </div>
         </div>
         <div className="show-password-container">
-          <input type="checkbox" id="show" className="check-box" />
+          <input
+            type="checkbox"
+            id="show"
+            className="check-box"
+            onClick={this.onClickCheckBox}
+          />
           <label className="show-password" htmlFor="show">
             Show Passwords
           </label>
